@@ -79,6 +79,41 @@ export interface AnalyticsSummaryResponse {
   };
 }
 
+export interface ReconConfigResponse {
+  id: string;
+  name: string;
+  owner: string | null;
+  category: string | null;
+  stakeholderEmail: string;
+  active: boolean;
+  configUrl: string;
+  schedule: { cron: string } | null;
+  strategy: string | null;
+  mismatchTolerance: number | null;
+  sources: {
+    left: Array<{
+      file: string;
+      database?: string;
+      amount_column?: string;
+      currency?: string;
+      match_columns?: string[];
+    }> | null;
+    right: Array<{
+      file: string;
+      database?: string;
+      amount_column?: string;
+      currency?: string;
+      match_columns?: string[];
+    }> | null;
+    sql: {
+      file: string;
+      database?: string;
+    } | null;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface InvestigateRequest {
   investigationStatus?: string;
   rootCause?: string;

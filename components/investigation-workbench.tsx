@@ -25,7 +25,7 @@ import {
 import { ArrowLeft, Download, Clock, User, AlertCircle, Loader2, CheckCircle2 } from "lucide-react"
 import type { ReconciliationTest, AuditEvent, TransactionRecord } from "@/lib/recon-data"
 import { formatCurrency, getRootCauseLabel } from "@/lib/recon-data"
-import { getExecutionDetail, updateInvestigation, addNote } from "@/lib/api/executions"
+import { getExecutionDetail, updateInvestigation, addNote, downloadMismatchesCsv } from "@/lib/api/executions"
 import { toAuditEvent, toTransactionRecords } from "@/lib/api/transform"
 import type { ExecutionDetailResponse } from "@/lib/api/types"
 
@@ -170,6 +170,18 @@ export function InvestigationWorkbench({ test, onBack }: InvestigationWorkbenchP
     }
   }
 
+  const handleDownloadCsv = async () => {
+    if (!test.executionId) return
+    try {
+      await downloadMismatchesCsv(test.executionId, `${test.name.replace(/\s+/g, "-")}-mismatches.csv`)
+    } catch (err) {
+      console.error("Failed to download CSV:", err)
+      toast.error("Failed to download CSV", {
+        description: err instanceof Error ? err.message : "Please try again.",
+      })
+    }
+  }
+
   const sourceATotal = sourceA.reduce((acc, t) => acc + t.amount, 0)
   const sourceBTotal = sourceB.reduce((acc, t) => acc + t.amount, 0)
 
@@ -193,7 +205,7 @@ export function InvestigationWorkbench({ test, onBack }: InvestigationWorkbenchP
               })}
             </span>
             {test.delta !== 0 && (
-              <span className="text-sm font-mono font-semibold text-red-600">
+              <span className="text-sm font-mono font-semibold text-red-600 dark:text-red-400">
                 Delta: {formatCurrency(test.delta)}
               </span>
             )}
@@ -211,7 +223,13 @@ export function InvestigationWorkbench({ test, onBack }: InvestigationWorkbenchP
                 <CardTitle className="text-base font-semibold text-card-foreground">
                   Transaction Matcher
                 </CardTitle>
-                <Button variant="outline" size="sm" className="gap-1.5 text-xs bg-transparent">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs bg-transparent"
+                  onClick={handleDownloadCsv}
+                  disabled={!test.executionId}
+                >
                   <Download className="h-3.5 w-3.5" />
                   Download Mismatched CSV
                 </Button>
@@ -227,7 +245,7 @@ export function InvestigationWorkbench({ test, onBack }: InvestigationWorkbenchP
                 <div className="py-12 text-center">
                   {executionDetail?.result?.unexpectedFailureReason ? (
                     <div>
-                      <AlertCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+                      <AlertCircle className="h-8 w-8 text-red-400 dark:text-red-500 mx-auto mb-2" />
                       <p className="text-sm text-muted-foreground">Execution failed unexpectedly</p>
                       <p className="text-xs text-muted-foreground mt-1">{executionDetail.result.unexpectedFailureReason}</p>
                     </div>
@@ -240,7 +258,7 @@ export function InvestigationWorkbench({ test, onBack }: InvestigationWorkbenchP
                             {" vs "}
                             Source B: <strong>{formatCurrency(executionDetail.result.rightAmount)}</strong>
                             {executionDetail.delta != null && (
-                              <span className="block mt-1 text-red-600 font-mono font-semibold">
+                              <span className="block mt-1 text-red-600 dark:text-red-400 font-mono font-semibold">
                                 Delta: {formatCurrency(executionDetail.delta)}
                               </span>
                             )}
@@ -280,16 +298,16 @@ export function InvestigationWorkbench({ test, onBack }: InvestigationWorkbenchP
                             {sourceA.map((txn) => (
                               <TableRow
                                 key={txn.id}
-                                className={!txn.matched ? "bg-red-50" : ""}
+                                className={!txn.matched ? "bg-red-50 dark:bg-red-950/30" : ""}
                               >
                                 <TableCell className="text-xs py-2">{txn.date}</TableCell>
-                                <TableCell className={`text-xs py-2 ${!txn.matched ? "text-red-700 font-medium" : "text-card-foreground"}`}>
+                                <TableCell className={`text-xs py-2 ${!txn.matched ? "text-red-700 dark:text-red-300 font-medium" : "text-card-foreground"}`}>
                                   {txn.description}
                                   {!txn.matched && (
-                                    <AlertCircle className="inline ml-1 h-3 w-3 text-red-500" />
+                                    <AlertCircle className="inline ml-1 h-3 w-3 text-red-500 dark:text-red-400" />
                                   )}
                                 </TableCell>
-                                <TableCell className={`text-xs py-2 text-right font-mono ${!txn.matched ? "text-red-700 font-medium" : ""}`}>
+                                <TableCell className={`text-xs py-2 text-right font-mono ${!txn.matched ? "text-red-700 dark:text-red-300 font-medium" : ""}`}>
                                   {formatCurrency(txn.amount)}
                                 </TableCell>
                               </TableRow>
@@ -343,11 +361,11 @@ export function InvestigationWorkbench({ test, onBack }: InvestigationWorkbenchP
                       <span className="text-muted-foreground">
                         Source B: <strong className="text-card-foreground">{sourceB.length}</strong> txns
                       </span>
-                      <span className="text-red-600 font-medium">
+                      <span className="text-red-600 dark:text-red-400 font-medium">
                         {sourceA.filter((t) => !t.matched).length} unmatched
                       </span>
                     </div>
-                    <span className="text-sm font-mono font-semibold text-red-600">
+                    <span className="text-sm font-mono font-semibold text-red-600 dark:text-red-400">
                       Delta: {formatCurrency(sourceATotal - sourceBTotal)}
                     </span>
                   </div>

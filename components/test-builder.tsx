@@ -2,13 +2,15 @@
 
 import React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -34,6 +36,8 @@ import {
 } from "@/components/ui/dialog"
 import { Plus, Pencil } from "lucide-react"
 import type { TestDefinition, ReconciliationTest } from "@/lib/recon-data"
+import { getReconConfig } from "@/lib/api/recons"
+import type { ReconConfigResponse } from "@/lib/api/types"
 
 function TestFormDialog({
   test,
@@ -171,6 +175,30 @@ interface TestBuilderProps {
   tests?: ReconciliationTest[]
 }
 
+function cronToFrequency(cron: string): string {
+  if (cron.includes("0 0 * * 1")) return "weekly"
+  if (cron.includes("0 0 1 * *")) return "monthly"
+  return "daily"
+}
+
+function configToDefinition(config: ReconConfigResponse): TestDefinition {
+  const leftFiles = config.sources.left?.map((s) => s.file).join(", ") || ""
+  const rightFiles = config.sources.right?.map((s) => s.file).join(", ") || ""
+  const sqlFile = config.sources.sql?.file || ""
+
+  return {
+    id: config.id,
+    name: config.name,
+    category: config.category || "—",
+    sourceA: leftFiles || sqlFile || "—",
+    sourceB: rightFiles || "—",
+    frequency: config.schedule ? cronToFrequency(config.schedule.cron) : "daily",
+    owner: config.owner || "—",
+    enabled: config.active,
+    tolerance: config.mismatchTolerance ?? 0.01,
+  }
+}
+
 function testsToDefinitions(tests: ReconciliationTest[]): TestDefinition[] {
   return tests.map((t) => ({
     id: t.id,
@@ -189,6 +217,49 @@ export function TestBuilder({ tests }: TestBuilderProps) {
   const [definitions, setDefinitions] = useState<TestDefinition[]>(
     tests ? testsToDefinitions(tests) : []
   )
+  const [loadingConfigs, setLoadingConfigs] = useState(false)
+
+  // Fetch real config data for each test
+  useEffect(() => {
+    if (!tests || tests.length === 0) return
+
+    setLoadingConfigs(true)
+
+    const fetchConfigs = async () => {
+      const results = await Promise.allSettled(
+        tests.map((t) => getReconConfig(t.id))
+      )
+
+      const enriched: TestDefinition[] = tests.map((t, i) => {
+        const result = results[i]
+        if (result.status === "fulfilled") {
+          return configToDefinition(result.value)
+        }
+        // Fallback to basic info if config fetch fails
+        return {
+          id: t.id,
+          name: t.name,
+          category: t.category,
+          sourceA: "—",
+          sourceB: "—",
+          frequency: "daily",
+          owner: t.owner,
+          enabled: true,
+          tolerance: 0.01,
+        }
+      })
+
+      setDefinitions(enriched)
+      setLoadingConfigs(false)
+
+      const failCount = results.filter((r) => r.status === "rejected").length
+      if (failCount > 0) {
+        toast.error(`Failed to load config for ${failCount} test(s)`)
+      }
+    }
+
+    fetchConfigs()
+  }, [tests])
 
   return (
     <div className="flex flex-col gap-6">
@@ -214,69 +285,77 @@ export function TestBuilder({ tests }: TestBuilderProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Test Name</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead>Source A</TableHead>
-                <TableHead>Source B</TableHead>
-                <TableHead>Frequency</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Tolerance</TableHead>
-                <TableHead>Enabled</TableHead>
-                <TableHead className="w-[50px]">
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {definitions.map((def) => (
-                <TableRow key={def.id}>
-                  <TableCell className="font-medium text-card-foreground">{def.name}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {def.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {def.sourceA}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {def.sourceB}
-                  </TableCell>
-                  <TableCell className="text-sm capitalize">{def.frequency}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{def.owner}</TableCell>
-                  <TableCell className="font-mono text-xs">
-                    ${def.tolerance.toFixed(2)}
-                  </TableCell>
-                  <TableCell>
-                    <Switch
-                      checked={def.enabled}
-                      onCheckedChange={(checked) => {
-                        setDefinitions((prev) =>
-                          prev.map((d) =>
-                            d.id === def.id ? { ...d, enabled: checked } : d
-                          )
-                        )
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <TestFormDialog
-                      test={def}
-                      trigger={
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="sr-only">Edit</span>
-                        </Button>
-                      }
-                    />
-                  </TableCell>
-                </TableRow>
+          {loadingConfigs ? (
+            <div className="flex flex-col gap-2">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-12 rounded-lg" />
               ))}
-            </TableBody>
-          </Table>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Test Name</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Source A</TableHead>
+                  <TableHead>Source B</TableHead>
+                  <TableHead>Frequency</TableHead>
+                  <TableHead>Owner</TableHead>
+                  <TableHead>Tolerance</TableHead>
+                  <TableHead>Enabled</TableHead>
+                  <TableHead className="w-[50px]">
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {definitions.map((def) => (
+                  <TableRow key={def.id}>
+                    <TableCell className="font-medium text-card-foreground">{def.name}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {def.category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground max-w-[160px] truncate">
+                      {def.sourceA}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground max-w-[160px] truncate">
+                      {def.sourceB}
+                    </TableCell>
+                    <TableCell className="text-sm capitalize">{def.frequency}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{def.owner}</TableCell>
+                    <TableCell className="font-mono text-xs">
+                      ${def.tolerance.toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={def.enabled}
+                        onCheckedChange={(checked) => {
+                          setDefinitions((prev) =>
+                            prev.map((d) =>
+                              d.id === def.id ? { ...d, enabled: checked } : d
+                            )
+                          )
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <TestFormDialog
+                        test={def}
+                        trigger={
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                        }
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -301,7 +380,7 @@ export function TestBuilder({ tests }: TestBuilderProps) {
               <p className="text-xs text-muted-foreground">{cat.label}</p>
               <div className="flex items-baseline gap-1 mt-1">
                 <span className={`text-xl font-semibold ${
-                  cat.current === cat.total ? "text-emerald-600" : "text-amber-600"
+                  cat.current === cat.total ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"
                 }`}>
                   {cat.current}
                 </span>
@@ -310,7 +389,7 @@ export function TestBuilder({ tests }: TestBuilderProps) {
               <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
                 <div
                   className={`h-full rounded-full ${
-                    cat.current === cat.total ? "bg-emerald-500" : "bg-amber-500"
+                    cat.current === cat.total ? "bg-emerald-500 dark:bg-emerald-600" : "bg-amber-500 dark:bg-amber-600"
                   }`}
                   style={{ width: `${(cat.current / cat.total) * 100}%` }}
                 />

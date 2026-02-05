@@ -36,22 +36,22 @@ function TestRow({ test, onSelect }: { test: ReconciliationTest; onSelect: () =>
         {test.daysFailing > 0 && (
           <span
             className={`text-sm font-semibold ${
-              test.daysFailing > 7 ? "text-red-600" : "text-amber-600"
+              test.daysFailing > 7 ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"
             }`}
           >
             {test.daysFailing} day{test.daysFailing !== 1 ? "s" : ""}
           </span>
         )}
-        <span className="text-sm font-mono font-medium text-red-600">
+        <span className="text-sm font-mono font-medium text-red-600 dark:text-red-400">
           {formatCurrency(Math.abs(test.delta))}
         </span>
         {test.status === "failed-unresolved" && (
-          <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">
+          <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/50">
             Unresolved
           </Badge>
         )}
         {test.status === "failed-investigating" && (
-          <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">
+          <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-900/50">
             Investigating
           </Badge>
         )}
@@ -84,11 +84,11 @@ export function AgingReport({ tests, onSelectTest }: AgingReportProps) {
         {critical.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <AlertCircle className="h-4 w-4 text-red-600" />
-              <h3 className="text-sm font-semibold text-red-600">
+              <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
+              <h3 className="text-sm font-semibold text-red-600 dark:text-red-400">
                 {"Critical / Unresolved (> 24 hours)"}
               </h3>
-              <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100">
+              <Badge className="bg-red-100 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/50">
                 {critical.length}
               </Badge>
             </div>
@@ -103,11 +103,11 @@ export function AgingReport({ tests, onSelectTest }: AgingReportProps) {
         {newFailures.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <Search className="h-4 w-4 text-amber-600" />
-              <h3 className="text-sm font-semibold text-amber-600">
+              <Search className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <h3 className="text-sm font-semibold text-amber-600 dark:text-amber-400">
                 {"New Failures (< 24 hours)"}
               </h3>
-              <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100">
+              <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-900/50">
                 {newFailures.length}
               </Badge>
             </div>
@@ -122,11 +122,11 @@ export function AgingReport({ tests, onSelectTest }: AgingReportProps) {
         {recentlyResolved.length > 0 && (
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <h3 className="text-sm font-semibold text-emerald-600">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <h3 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                 Recently Resolved
               </h3>
-              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
+              <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/50">
                 {recentlyResolved.length}
               </Badge>
             </div>
@@ -151,7 +151,7 @@ export function AgingReport({ tests, onSelectTest }: AgingReportProps) {
                       {test.resolutionNotes}
                     </p>
                   </div>
-                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 shrink-0">
+                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/50 shrink-0">
                     Resolved
                   </Badge>
                 </button>

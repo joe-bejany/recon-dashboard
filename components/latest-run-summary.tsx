@@ -34,10 +34,10 @@ interface LatestRunSummaryProps {
 
 function StatusBadge({ status }: { status: ReconciliationTest["status"] }) {
   const styles = {
-    success: "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100",
-    "failed-unresolved": "bg-red-100 text-red-700 border-red-200 hover:bg-red-100",
-    "failed-investigating": "bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100",
-    "failed-resolved": "bg-sky-100 text-sky-700 border-sky-200 hover:bg-sky-100",
+    success: "bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/50",
+    "failed-unresolved": "bg-red-100 text-red-700 border-red-200 hover:bg-red-100 dark:bg-red-900/50 dark:text-red-300 dark:border-red-800 dark:hover:bg-red-900/50",
+    "failed-investigating": "bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-900/50",
+    "failed-resolved": "bg-sky-100 text-sky-700 border-sky-200 hover:bg-sky-100 dark:bg-sky-900/50 dark:text-sky-300 dark:border-sky-800 dark:hover:bg-sky-900/50",
   }
 
   return (
@@ -136,7 +136,7 @@ export function LatestRunSummary({ tests, onSelectTest }: LatestRunSummaryProps)
                     className={`text-sm ${
                       getTimeSinceRun(test.lastRun).includes("hour") ||
                       getTimeSinceRun(test.lastRun).includes("<")
-                        ? "text-emerald-600"
+                        ? "text-emerald-600 dark:text-emerald-400"
                         : "text-muted-foreground"
                     }`}
                   >
@@ -148,11 +148,11 @@ export function LatestRunSummary({ tests, onSelectTest }: LatestRunSummaryProps)
                 </TableCell>
                 <TableCell className="text-right font-mono">
                   {test.delta !== 0 ? (
-                    <span className="text-red-600">
+                    <span className="text-red-600 dark:text-red-400">
                       {formatCurrency(test.delta)}
                     </span>
                   ) : (
-                    <span className="text-emerald-600">$0.00</span>
+                    <span className="text-emerald-600 dark:text-emerald-400">$0.00</span>
                   )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">

@@ -17,11 +17,14 @@ import { toReconciliationTest } from "@/lib/api/transform"
 import type { AnalyticsSummaryResponse } from "@/lib/api/types"
 import type { ReconciliationTest } from "@/lib/recon-data"
 import { useAuth } from "@/lib/auth/context"
+import { useTheme } from "next-themes"
 import {
   Activity,
   AlertTriangle,
   BarChart3,
   LogOut,
+  Moon,
+  Sun,
   Settings2,
   LayoutDashboard,
   RefreshCw,
@@ -179,6 +182,7 @@ export default function Page() {
 
 function DashboardHeader({ lastSync }: { lastSync: Date | null }) {
   const { user, logout } = useAuth()
+  const { theme, setTheme } = useTheme()
 
   const syncText = lastSync
     ? lastSync.toLocaleDateString("en-US", {
@@ -212,10 +216,20 @@ function DashboardHeader({ lastSync }: { lastSync: Date | null }) {
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="hidden sm:inline">Last sync: {syncText}</span>
           <div className="h-2 w-2 rounded-full bg-emerald-500" />
-          <span className="text-emerald-600 font-medium">Live</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-medium">Live</span>
+          <div className="h-4 w-px bg-border hidden sm:block" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          >
+            <Sun className="h-3.5 w-3.5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-3.5 w-3.5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
+          </Button>
           {user && (
             <>
-              <div className="h-4 w-px bg-border hidden sm:block" />
               <span className="hidden sm:inline">{user.email}</span>
               <Button
                 variant="ghost"
@@ -260,8 +274,8 @@ function AnalyticsSkeleton() {
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-4">
-      <div className="rounded-full bg-red-50 p-3">
-        <AlertTriangle className="h-6 w-6 text-red-500" />
+      <div className="rounded-full bg-red-50 dark:bg-red-950/50 p-3">
+        <AlertTriangle className="h-6 w-6 text-red-500 dark:text-red-400" />
       </div>
       <div className="text-center">
         <h3 className="text-sm font-semibold text-foreground">Unable to load dashboard</h3>

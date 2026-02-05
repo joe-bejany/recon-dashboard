@@ -273,8 +273,8 @@ export function AnalyticsTrends({ analytics }: AnalyticsTrendsProps) {
       <Card className="border-border/60">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-sky-50 p-1.5">
-              <Sparkles className="h-4 w-4 text-sky-600" />
+            <div className="rounded-lg bg-sky-50 dark:bg-sky-950/50 p-1.5">
+              <Sparkles className="h-4 w-4 text-sky-600 dark:text-sky-400" />
             </div>
             <div>
               <CardTitle className="text-base font-semibold text-card-foreground">
@@ -288,12 +288,12 @@ export function AnalyticsTrends({ analytics }: AnalyticsTrendsProps) {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
-            <div className="rounded-lg border border-sky-200 bg-sky-50/50 p-4">
+            <div className="rounded-lg border border-sky-200 dark:border-sky-800 bg-sky-50/50 dark:bg-sky-950/30 p-4">
               <div className="flex items-start gap-3">
-                <Badge className="bg-sky-100 text-sky-700 border-sky-200 hover:bg-sky-100 shrink-0 mt-0.5">
+                <Badge className="bg-sky-100 text-sky-700 border-sky-200 hover:bg-sky-100 dark:bg-sky-900/50 dark:text-sky-300 dark:border-sky-800 dark:hover:bg-sky-900/50 shrink-0 mt-0.5">
                   Trend
                 </Badge>
-                <p className="text-sm text-sky-900 leading-relaxed">
+                <p className="text-sm text-sky-900 dark:text-sky-100 leading-relaxed">
                   Over the last 30 days, 40% of failures were tagged as &quot;Timing
                   Differences&quot; regarding the Arcus AirTime vendor. This suggests a
                   systemic latency issue rather than one-off data errors.{" "}
@@ -305,12 +305,12 @@ export function AnalyticsTrends({ analytics }: AnalyticsTrendsProps) {
               </div>
             </div>
 
-            <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+            <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/30 p-4">
               <div className="flex items-start gap-3">
-                <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 shrink-0 mt-0.5">
+                <Badge className="bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-900/50 shrink-0 mt-0.5">
                   Pattern
                 </Badge>
-                <p className="text-sm text-amber-900 leading-relaxed">
+                <p className="text-sm text-amber-900 dark:text-amber-100 leading-relaxed">
                   Weekend gaps in MC settlement files account for 17% of all failures.
                   These are consistently resolved by Monday morning file ingestion and could
                   be suppressed with a scheduled delay rule to eliminate false positives.
@@ -318,12 +318,12 @@ export function AnalyticsTrends({ analytics }: AnalyticsTrendsProps) {
               </div>
             </div>
 
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-4">
+            <div className="rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/30 p-4">
               <div className="flex items-start gap-3">
-                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 shrink-0 mt-0.5">
+                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/50 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/50 shrink-0 mt-0.5">
                   Positive
                 </Badge>
-                <p className="text-sm text-emerald-900 leading-relaxed">
+                <p className="text-sm text-emerald-900 dark:text-emerald-100 leading-relaxed">
                   Average resolution time has decreased from 3.2 hours to 1.5 hours over
                   the past month. STP and Stripe reconciliation categories have maintained
                   100% success rate for 21 consecutive days.
