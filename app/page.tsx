@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { toast } from "sonner"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -15,9 +16,12 @@ import { getAnalyticsSummary } from "@/lib/api/analytics"
 import { toReconciliationTest } from "@/lib/api/transform"
 import type { AnalyticsSummaryResponse } from "@/lib/api/types"
 import type { ReconciliationTest } from "@/lib/recon-data"
+import { useAuth } from "@/lib/auth/context"
 import {
   Activity,
+  AlertTriangle,
   BarChart3,
+  LogOut,
   Settings2,
   LayoutDashboard,
   RefreshCw,
@@ -30,10 +34,12 @@ export default function Page() {
   const [tests, setTests] = useState<ReconciliationTest[]>([])
   const [analytics, setAnalytics] = useState<AnalyticsSummaryResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [lastSync, setLastSync] = useState<Date | null>(null)
+  const autoRefreshRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (silent = false) => {
     try {
       const [reconsData, analyticsData] = await Promise.all([
         listRecons(),
@@ -42,8 +48,14 @@ export default function Page() {
       setTests(reconsData.map(toReconciliationTest))
       setAnalytics(analyticsData)
       setLastSync(new Date())
-    } catch (error) {
-      console.error("Failed to fetch dashboard data:", error)
+      setError(null)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to fetch data"
+      console.error("Failed to fetch dashboard data:", err)
+      setError(message)
+      if (!silent) {
+        toast.error("Failed to load dashboard data", { description: message })
+      }
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -53,6 +65,22 @@ export default function Page() {
   useEffect(() => {
     fetchData()
   }, [fetchData])
+
+  // Auto-refresh every 60s when on overview tab and not investigating
+  useEffect(() => {
+    if (selectedTest) {
+      if (autoRefreshRef.current) clearInterval(autoRefreshRef.current)
+      return
+    }
+
+    autoRefreshRef.current = setInterval(() => {
+      fetchData(true) // silent — no toast on auto-refresh errors
+    }, 60_000)
+
+    return () => {
+      if (autoRefreshRef.current) clearInterval(autoRefreshRef.current)
+    }
+  }, [fetchData, selectedTest])
 
   const handleRefresh = () => {
     setRefreshing(true)
@@ -115,6 +143,8 @@ export default function Page() {
           <TabsContent value="overview" className="mt-0 flex flex-col gap-6">
             {loading ? (
               <DashboardSkeleton />
+            ) : error && tests.length === 0 ? (
+              <ErrorState message={error} onRetry={handleRefresh} />
             ) : (
               <>
                 <KpiCards tests={tests} analytics={analytics} />
@@ -148,6 +178,8 @@ export default function Page() {
 }
 
 function DashboardHeader({ lastSync }: { lastSync: Date | null }) {
+  const { user, logout } = useAuth()
+
   const syncText = lastSync
     ? lastSync.toLocaleDateString("en-US", {
         month: "short",
@@ -177,10 +209,24 @@ function DashboardHeader({ lastSync }: { lastSync: Date | null }) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span className="hidden sm:inline">Last sync: {syncText}</span>
           <div className="h-2 w-2 rounded-full bg-emerald-500" />
           <span className="text-emerald-600 font-medium">Live</span>
+          {user && (
+            <>
+              <div className="h-4 w-px bg-border hidden sm:block" />
+              <span className="hidden sm:inline">{user.email}</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={logout}
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </header>
@@ -207,6 +253,24 @@ function AnalyticsSkeleton() {
       {[1, 2, 3, 4].map((i) => (
         <Skeleton key={i} className="h-[350px] rounded-lg" />
       ))}
+    </div>
+  )
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 gap-4">
+      <div className="rounded-full bg-red-50 p-3">
+        <AlertTriangle className="h-6 w-6 text-red-500" />
+      </div>
+      <div className="text-center">
+        <h3 className="text-sm font-semibold text-foreground">Unable to load dashboard</h3>
+        <p className="text-sm text-muted-foreground mt-1 max-w-md">{message}</p>
+      </div>
+      <Button variant="outline" size="sm" onClick={onRetry} className="gap-1.5">
+        <RefreshCw className="h-3.5 w-3.5" />
+        Try Again
+      </Button>
     </div>
   )
 }

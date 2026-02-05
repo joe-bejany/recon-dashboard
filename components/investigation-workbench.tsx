@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { toast } from "sonner"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -121,7 +122,12 @@ export function InvestigationWorkbench({ test, onBack }: InvestigationWorkbenchP
           setRootCause(detail.rootCause as typeof rootCause)
         }
       })
-      .catch((err) => console.error("Failed to load execution detail:", err))
+      .catch((err) => {
+        console.error("Failed to load execution detail:", err)
+        toast.error("Failed to load execution details", {
+          description: err instanceof Error ? err.message : "Please try again.",
+        })
+      })
       .finally(() => setLoadingDetail(false))
   }, [test.executionId, test.status])
 
@@ -152,9 +158,13 @@ export function InvestigationWorkbench({ test, onBack }: InvestigationWorkbenchP
 
       setNotes("")
       setSaved(true)
+      toast.success("Changes saved", { description: "Investigation updated successfully." })
       setTimeout(() => setSaved(false), 3000)
     } catch (err) {
       console.error("Failed to save:", err)
+      toast.error("Failed to save changes", {
+        description: err instanceof Error ? err.message : "Please try again.",
+      })
     } finally {
       setSaving(false)
     }
