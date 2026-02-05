@@ -33,7 +33,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Plus, Pencil } from "lucide-react"
-import { testDefinitions, type TestDefinition } from "@/lib/recon-data"
+import type { TestDefinition, ReconciliationTest } from "@/lib/recon-data"
 
 function TestFormDialog({
   test,
@@ -167,8 +167,28 @@ function TestFormDialog({
   )
 }
 
-export function TestBuilder() {
-  const [definitions, setDefinitions] = useState(testDefinitions)
+interface TestBuilderProps {
+  tests?: ReconciliationTest[]
+}
+
+function testsToDefinitions(tests: ReconciliationTest[]): TestDefinition[] {
+  return tests.map((t) => ({
+    id: t.id,
+    name: t.name,
+    category: t.category,
+    sourceA: "—",
+    sourceB: "—",
+    frequency: "daily",
+    owner: t.owner,
+    enabled: true,
+    tolerance: 0.01,
+  }))
+}
+
+export function TestBuilder({ tests }: TestBuilderProps) {
+  const [definitions, setDefinitions] = useState<TestDefinition[]>(
+    tests ? testsToDefinitions(tests) : []
+  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -262,15 +282,20 @@ export function TestBuilder() {
 
       {/* Coverage Summary */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "STP", current: 5, total: 5 },
-          { label: "Bill Pay", current: 7, total: 7 },
-          { label: "Payment Processing", current: 9, total: 9 },
-          { label: "Stripe", current: 3, total: 3 },
-          { label: "Internal Bank Transfers", current: 2, total: 2 },
-          { label: "P&L", current: 2, total: 2 },
-          { label: "Marketplace", current: 0, total: 3 },
-        ].map((cat) => (
+        {(() => {
+          const categoryMap = new Map<string, { total: number; enabled: number }>()
+          for (const def of definitions) {
+            const entry = categoryMap.get(def.category) || { total: 0, enabled: 0 }
+            entry.total++
+            if (def.enabled) entry.enabled++
+            categoryMap.set(def.category, entry)
+          }
+          return Array.from(categoryMap.entries()).map(([label, val]) => ({
+            label,
+            current: val.enabled,
+            total: val.total,
+          }))
+        })().map((cat) => (
           <Card key={cat.label} className="border-border/60">
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">{cat.label}</p>

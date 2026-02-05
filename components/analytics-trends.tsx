@@ -15,16 +15,11 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  ResponsiveContainer,
   Cell,
 } from "recharts"
 import { Sparkles } from "lucide-react"
-import {
-  reconRateData,
-  discrepancyData,
-  speedToFixData,
-  rootCauseData,
-} from "@/lib/recon-data"
+import type { AnalyticsSummaryResponse } from "@/lib/api/types"
+import { getRootCauseLabel } from "@/lib/recon-data"
 
 const reconRateConfig = {
   rate: {
@@ -63,179 +58,216 @@ const rootCauseColors = [
   "hsl(220, 14%, 82%)",
 ]
 
-export function AnalyticsTrends() {
+interface AnalyticsTrendsProps {
+  analytics?: AnalyticsSummaryResponse | null
+}
+
+export function AnalyticsTrends({ analytics }: AnalyticsTrendsProps) {
+  const reconRateData = analytics?.trends.reconRate ?? []
+  const discrepancyData = analytics?.trends.discrepancyVolume ?? []
+  const speedToFixData = analytics?.trends.speedToFix ?? []
+  const rootCauseData = (analytics?.trends.rootCauseDistribution ?? []).map(d => ({
+    ...d,
+    cause: getRootCauseLabel(d.cause),
+  }))
+
+  const hasData = reconRateData.length > 0 || discrepancyData.length > 0
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Charts Grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Reconciliation Rate */}
+      {!hasData && (
         <Card className="border-border/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-card-foreground">
-              Reconciliation Rate
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Last 90 days - % of tests passing daily
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-muted-foreground">
+              No analytics data available yet. Data will appear once reconciliation executions have been recorded.
             </p>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={reconRateConfig} className="h-[280px] w-full">
-              <LineChart data={reconRateData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(v) => {
-                    const d = new Date(v)
-                    return `${d.getMonth() + 1}/${d.getDate()}`
-                  }}
-                  tick={{ fontSize: 11 }}
-                  interval={14}
-                />
-                <YAxis domain={[90, 100]} tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value) => [`${value}%`, "Rate"]}
-                    />
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="rate"
-                  stroke="var(--color-rate)"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </LineChart>
-            </ChartContainer>
           </CardContent>
         </Card>
+      )}
 
-        {/* Discrepancy Volume */}
-        <Card className="border-border/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-card-foreground">
-              Discrepancy Volume
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Last 30 days - Total $ unmatched per day
-            </p>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={discrepancyConfig} className="h-[280px] w-full">
-              <BarChart data={discrepancyData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(v) => {
-                    const d = new Date(v)
-                    return `${d.getMonth() + 1}/${d.getDate()}`
-                  }}
-                  tick={{ fontSize: 11 }}
-                  interval={6}
-                />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value) => [
-                        `$${Number(value).toLocaleString()}`,
-                        "Discrepancy",
-                      ]}
-                    />
-                  }
-                />
-                <Bar dataKey="amount" fill="var(--color-amount)" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+      {hasData && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {/* Reconciliation Rate */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold text-card-foreground">
+                Reconciliation Rate
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Last 90 days - % of tests passing daily
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={reconRateConfig} className="h-[280px] w-full">
+                <LineChart data={reconRateData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(v) => {
+                      const d = new Date(v)
+                      return `${d.getMonth() + 1}/${d.getDate()}`
+                    }}
+                    tick={{ fontSize: 11 }}
+                    interval={14}
+                  />
+                  <YAxis domain={[90, 100]} tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value) => [`${value}%`, "Rate"]}
+                      />
+                    }
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="rate"
+                    stroke="var(--color-rate)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                  />
+                </LineChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
 
-        {/* Speed to Fix */}
-        <Card className="border-border/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-card-foreground">
-              Speed to Fix
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Last 30 days - Avg hours from failed to resolved
-            </p>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={speedConfig} className="h-[280px] w-full">
-              <LineChart data={speedToFixData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(v) => {
-                    const d = new Date(v)
-                    return `${d.getMonth() + 1}/${d.getDate()}`
-                  }}
-                  tick={{ fontSize: 11 }}
-                  interval={6}
-                />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}h`} />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value) => [`${value} hours`, "Avg Speed"]}
-                    />
-                  }
-                />
-                <Line
-                  type="monotone"
-                  dataKey="hours"
-                  stroke="var(--color-hours)"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4 }}
-                />
-              </LineChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
+          {/* Discrepancy Volume */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold text-card-foreground">
+                Discrepancy Volume
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Last 30 days - Total $ unmatched per day
+              </p>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer config={discrepancyConfig} className="h-[280px] w-full">
+                <BarChart data={discrepancyData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(v) => {
+                      const d = new Date(v)
+                      return `${d.getMonth() + 1}/${d.getDate()}`
+                    }}
+                    tick={{ fontSize: 11 }}
+                    interval={6}
+                  />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value) => [
+                          `$${Number(value).toLocaleString()}`,
+                          "Discrepancy",
+                        ]}
+                      />
+                    }
+                  />
+                  <Bar dataKey="amount" fill="var(--color-amount)" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
 
-        {/* Root Cause Distribution */}
-        <Card className="border-border/60">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-card-foreground">
-              Root Cause Distribution
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Last 30 days - Categorized failure reasons
-            </p>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={rootCauseConfig} className="h-[280px] w-full">
-              <BarChart
-                data={rootCauseData}
-                layout="vertical"
-                margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 11 }} />
-                <YAxis dataKey="cause" type="category" tick={{ fontSize: 11 }} width={120} />
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value, name, item) => [
-                        `${value} occurrences (${item.payload.percentage}%)`,
-                        "Count",
-                      ]}
+          {/* Speed to Fix */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold text-card-foreground">
+                Speed to Fix
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Last 30 days - Avg hours from failed to resolved
+              </p>
+            </CardHeader>
+            <CardContent>
+              {speedToFixData.length > 0 ? (
+                <ChartContainer config={speedConfig} className="h-[280px] w-full">
+                  <LineChart data={speedToFixData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
+                    <XAxis
+                      dataKey="date"
+                      tickFormatter={(v) => {
+                        const d = new Date(v)
+                        return `${d.getMonth() + 1}/${d.getDate()}`
+                      }}
+                      tick={{ fontSize: 11 }}
+                      interval={6}
                     />
-                  }
-                />
-                <Bar dataKey="count" radius={[0, 3, 3, 0]}>
-                  {rootCauseData.map((_, index) => (
-                    <Cell key={`cell-${index}`} fill={rootCauseColors[index % rootCauseColors.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
+                    <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}h`} />
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value) => [`${value} hours`, "Avg Speed"]}
+                        />
+                      }
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="hours"
+                      stroke="var(--color-hours)"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ChartContainer>
+              ) : (
+                <div className="h-[280px] flex items-center justify-center text-sm text-muted-foreground">
+                  No resolution data yet
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Root Cause Distribution */}
+          <Card className="border-border/60">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base font-semibold text-card-foreground">
+                Root Cause Distribution
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Last 30 days - Categorized failure reasons
+              </p>
+            </CardHeader>
+            <CardContent>
+              {rootCauseData.length > 0 ? (
+                <ChartContainer config={rootCauseConfig} className="h-[280px] w-full">
+                  <BarChart
+                    data={rootCauseData}
+                    layout="vertical"
+                    margin={{ top: 5, right: 10, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" horizontal={false} />
+                    <XAxis type="number" tick={{ fontSize: 11 }} />
+                    <YAxis dataKey="cause" type="category" tick={{ fontSize: 11 }} width={120} />
+                    <ChartTooltip
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value, name, item) => [
+                            `${value} occurrences (${item.payload.percentage}%)`,
+                            "Count",
+                          ]}
+                        />
+                      }
+                    />
+                    <Bar dataKey="count" radius={[0, 3, 3, 0]}>
+                      {rootCauseData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={rootCauseColors[index % rootCauseColors.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ChartContainer>
+              ) : (
+                <div className="h-[280px] flex items-center justify-center text-sm text-muted-foreground">
+                  No root cause data yet
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* AI Analyst */}
       <Card className="border-border/60">

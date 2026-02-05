@@ -6,7 +6,7 @@ export type RootCause = "timing-difference" | "data-entry-error" | "engineer-bug
 export interface ReconciliationTest {
   id: string
   name: string
-  category: "STP" | "Bill Pay" | "Payment Processing" | "Stripe" | "Internal Bank Transfers" | "P&L" | "Marketplace"
+  category: "STP" | "Bill Pay" | "Payment Processing" | "Stripe" | "Internal Bank Transfers" | "P&L" | "Marketplace" | string
   status: TestStatus
   lastRun: string
   daysFailing: number
@@ -15,6 +15,7 @@ export interface ReconciliationTest {
   severity: Severity
   rootCause?: RootCause
   resolutionNotes?: string
+  executionId?: string
 }
 
 export interface AuditEvent {
@@ -533,7 +534,7 @@ export function getStatusLabel(status: TestStatus): string {
   }
 }
 
-export function getRootCauseLabel(cause: RootCause): string {
+export function getRootCauseLabel(cause: RootCause | string): string {
   switch (cause) {
     case "timing-difference": return "Timing Difference"
     case "data-entry-error": return "Data Entry Error"
@@ -542,6 +543,7 @@ export function getRootCauseLabel(cause: RootCause): string {
     case "missing-file": return "Missing File"
     case "weekend-gap": return "Weekend Gap"
     case "unknown": return "Unknown"
+    default: return cause
   }
 }
 
@@ -554,7 +556,7 @@ export function formatCurrency(amount: number): string {
 }
 
 export function getTimeSinceRun(lastRun: string): string {
-  const now = new Date("2026-02-05T12:00:00Z")
+  const now = new Date()
   const run = new Date(lastRun)
   const diffHours = Math.floor((now.getTime() - run.getTime()) / (1000 * 60 * 60))
   if (diffHours < 1) return "<1 hour"
